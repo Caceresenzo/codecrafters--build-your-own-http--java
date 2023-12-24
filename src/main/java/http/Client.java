@@ -87,7 +87,7 @@ public class Client implements Runnable {
 			}
 
 			final var key = parts[0];
-			final var value = parts[1];
+			final var value = parts[1].stripLeading();
 
 			headers.put(key, value);
 		}
