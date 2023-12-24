@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 public class Client implements Runnable {
 
@@ -18,6 +19,9 @@ public class Client implements Runnable {
 	private static final byte[] HTTP_1_1_BYTES = HTTP_1_1.getBytes();
 	private static final byte[] CRLF_BYTES = CRLF.getBytes();
 	private static final byte SPACE_BYTE = ' ';
+	private static final byte[] COLON_SPACE_BYTE = { ':', ' ' };
+
+	private static final Pattern ECHO_PATTERN = Pattern.compile("\\/echo\\/(.*)");
 
 	private static final AtomicInteger ID_INCREMENT = new AtomicInteger();
 
@@ -92,11 +96,16 @@ public class Client implements Runnable {
 	}
 
 	public Response handle(Request request) {
-		if (request.path().equals("/")) {
-			return new Response(Status.OK);
+		{
+			final var match = ECHO_PATTERN.matcher(request.path());
+			if (match.find()) {
+				final var message = match.group(1);
+
+				return Response.plainText(message);
+			}
 		}
 
-		return new Response(Status.NOT_FOUND);
+		return Response.notFound();
 	}
 
 	public void send(Response response, OutputStream outputStream) throws IOException {
@@ -108,10 +117,19 @@ public class Client implements Runnable {
 
 		outputStream.write(CRLF_BYTES);
 
-		// TODO Headers
+		for (final var entry : response.headers().entrySet()) {
+			final var key = entry.getKey();
+			final var value = entry.getValue();
+
+			outputStream.write(key.getBytes());
+			outputStream.write(COLON_SPACE_BYTE);
+			outputStream.write(value.getBytes());
+			outputStream.write(CRLF_BYTES);
+		}
+
 		outputStream.write(CRLF_BYTES);
 
-		// TODO Body
+		outputStream.write(response.body());
 
 		outputStream.flush();
 	}
