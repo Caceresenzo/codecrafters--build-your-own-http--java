@@ -9,12 +9,20 @@ public record Response(
 	byte[] body
 ) {
 
+	public static Response ok() {
+		return new Response(
+			Status.OK,
+			Collections.emptyMap(),
+			new byte[0]
+		);
+	}
+	
 	public static Response notFound() {
 		return new Response(
 			Status.NOT_FOUND,
 			Collections.emptyMap(),
 			new byte[0]
-		);
+			);
 	}
 
 	public static Response plainText(String content) {

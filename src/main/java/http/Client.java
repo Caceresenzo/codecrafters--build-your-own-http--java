@@ -96,6 +96,10 @@ public class Client implements Runnable {
 	}
 
 	public Response handle(Request request) {
+		if (request.path().equals("/")) {
+			return Response.ok();
+		}
+
 		{
 			final var match = ECHO_PATTERN.matcher(request.path());
 			if (match.find()) {
