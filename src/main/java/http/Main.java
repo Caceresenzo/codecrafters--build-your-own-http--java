@@ -10,14 +10,17 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		System.out.println("codecrafters build-your-own-http");
 
+		final var threadFactory = Thread.ofVirtual().factory();
+
 		try (final var serverSocket = new ServerSocket(PORT)) {
 			serverSocket.setReuseAddress(true);
 
-			try (final var socket = serverSocket.accept()) {
-				final var outputStream = socket.getOutputStream();
+			while (true) {
+				final var socket = serverSocket.accept();
+				final var client = new Client(socket);
 
-				outputStream.write("HTTP/1.1 200 OK\r\n\r\n".getBytes());
-				outputStream.flush();
+				final var thread = threadFactory.newThread(client);
+				thread.start();
 			}
 		}
 	}
