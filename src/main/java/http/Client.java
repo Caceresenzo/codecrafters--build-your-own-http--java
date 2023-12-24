@@ -2,6 +2,7 @@ package http;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,6 +23,7 @@ public class Client implements Runnable {
 	private static final byte[] COLON_SPACE_BYTE = { ':', ' ' };
 
 	private static final Pattern ECHO_PATTERN = Pattern.compile("\\/echo\\/(.*)");
+	private static final Pattern FILES_PATTERN = Pattern.compile("\\/files\\/(.+)");
 
 	private static final AtomicInteger ID_INCREMENT = new AtomicInteger();
 
@@ -95,7 +97,7 @@ public class Client implements Runnable {
 		return new Request(method, path, headers);
 	}
 
-	public Response handle(Request request) {
+	public Response handle(Request request) throws IOException {
 		if (request.path().equals("/")) {
 			return Response.ok();
 		}
@@ -111,6 +113,16 @@ public class Client implements Runnable {
 				final var message = match.group(1);
 
 				return Response.plainText(message);
+			}
+		}
+
+		{
+			final var match = FILES_PATTERN.matcher(request.path());
+			if (match.find()) {
+				// TODO Protect against `../` */
+				final var path = match.group(1);
+
+				return Response.file(new File(Main.WORKING_DIRECTORY, path));
 			}
 		}
 
