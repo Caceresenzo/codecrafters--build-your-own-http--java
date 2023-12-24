@@ -2,6 +2,7 @@ package http;
 
 public enum Method {
 
-	GET;
+	GET,
+	POST;
 
 }

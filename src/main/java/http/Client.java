@@ -3,6 +3,7 @@ package http;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -58,8 +59,10 @@ public class Client implements Runnable {
 	}
 
 	public Request parse(InputStream inputStream) throws IOException {
+		var line = nextLine(inputStream);
+
 		@SuppressWarnings("resource")
-		final var scanner = new Scanner(inputStream);
+		var scanner = new Scanner(line);
 
 		final var method = Method.valueOf(scanner.next());
 
@@ -73,15 +76,13 @@ public class Client implements Runnable {
 			throw new IllegalStateException("unsupported version: " + version);
 		}
 
-		final var remaining = scanner.nextLine();
-		if (!remaining.isEmpty()) {
-			throw new IllegalStateException("content after version: " + remaining);
+		if (scanner.hasNext()) {
+			throw new IllegalStateException("content after version: " + scanner.next());
 		}
 
 		final var headers = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
 
-		String line;
-		while (!(line = scanner.nextLine()).isEmpty()) {
+		while (!(line = nextLine(inputStream)).isEmpty()) {
 			final var parts = line.split(":", 2);
 
 			if (parts.length != 2) {
@@ -94,12 +95,26 @@ public class Client implements Runnable {
 			headers.put(key, value);
 		}
 
-		return new Request(method, path, headers);
+		if (Method.POST.equals(method)) {
+			final var contentLength = Integer.parseInt(headers.get("Content-Length"));
+			final var body = inputStream.readNBytes(contentLength);
+
+			return new Request(method, path, headers, body);
+		}
+
+		return new Request(method, path, headers, null);
 	}
 
 	public Response handle(Request request) throws IOException {
+		return switch (request.method()) {
+			case GET -> handleGet(request);
+			case POST -> handlePost(request);
+		};
+	}
+
+	public Response handleGet(Request request) throws IOException {
 		if (request.path().equals("/")) {
-			return Response.ok();
+			return Response.status(Status.OK);
 		}
 
 		if (request.path().equals("/user-agent")) {
@@ -126,7 +141,25 @@ public class Client implements Runnable {
 			}
 		}
 
-		return Response.notFound();
+		return Response.status(Status.NOT_FOUND);
+	}
+
+	public Response handlePost(Request request) throws IOException {
+		{
+			final var match = FILES_PATTERN.matcher(request.path());
+			if (match.find()) {
+				// TODO Protect against `../` */
+				final var path = match.group(1);
+
+				try (final var outputStream = new FileOutputStream(new File(Main.WORKING_DIRECTORY, path))) {
+					outputStream.write(request.body());
+				}
+
+				return Response.status(Status.CREATED);
+			}
+		}
+
+		return Response.status(Status.NOT_FOUND);
 	}
 
 	public void send(Response response, OutputStream outputStream) throws IOException {
@@ -153,6 +186,30 @@ public class Client implements Runnable {
 		outputStream.write(response.body());
 
 		outputStream.flush();
+	}
+
+	private String nextLine(InputStream inputStream) throws IOException {
+		final var builder = new StringBuilder();
+
+		var cariageReturn = false;
+
+		int value;
+		while ((value = inputStream.read()) != -1) {
+			if ('\n' == value && cariageReturn) {
+				break;
+			} else if ('\r' == value) {
+				cariageReturn = true;
+			} else {
+				if (cariageReturn) {
+					builder.append('\r');
+				}
+
+				builder.append((char) value);
+				cariageReturn = false;
+			}
+		}
+
+		return builder.toString();
 	}
 
 }

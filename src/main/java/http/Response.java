@@ -13,17 +13,9 @@ public record Response(
 	byte[] body
 ) {
 
-	public static Response ok() {
+	public static Response status(Status status) {
 		return new Response(
-			Status.OK,
-			Collections.emptyMap(),
-			new byte[0]
-		);
-	}
-
-	public static Response notFound() {
-		return new Response(
-			Status.NOT_FOUND,
+			status,
 			Collections.emptyMap(),
 			new byte[0]
 		);
@@ -55,7 +47,7 @@ public record Response(
 				bytes
 			);
 		} catch (FileNotFoundException exception) {
-			return notFound();
+			return status(Status.NOT_FOUND);
 		}
 	}
 

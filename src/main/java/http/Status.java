@@ -10,6 +10,7 @@ import lombok.experimental.Accessors;
 public enum Status {
 
 	OK(200, "OK"),
+	CREATED(201, "Created"),
 	NOT_FOUND(404, "Not Found");
 
 	private final int code;
