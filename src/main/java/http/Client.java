@@ -100,6 +100,11 @@ public class Client implements Runnable {
 			return Response.ok();
 		}
 
+		if (request.path().equals("/user-agent")) {
+			final var userAgent = request.headers().get("User-Agent");
+			return Response.plainText(userAgent);
+		}
+
 		{
 			final var match = ECHO_PATTERN.matcher(request.path());
 			if (match.find()) {
