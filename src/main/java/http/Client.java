@@ -188,8 +188,6 @@ public class Client implements Runnable {
 		outputStream.write(SPACE_BYTE);
 
 		outputStream.write(response.status().line().getBytes());
-		outputStream.write(SPACE_BYTE);
-
 		outputStream.write(CRLF_BYTES);
 
 		for (final var entry : response.headers().entrySet()) {
