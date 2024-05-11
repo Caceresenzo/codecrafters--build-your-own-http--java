@@ -25,8 +25,7 @@ public record Response(
 		return new Response(
 			Status.OK,
 			new Headers()
-				.put(Headers.CONTENT_TYPE, "text/plain")
-				.put(Headers.CONTENT_LENGTH, String.valueOf(bytes.length)),
+				.put(Headers.CONTENT_TYPE, "text/plain"),
 			bytes
 		);
 	}
@@ -38,8 +37,7 @@ public record Response(
 			return new Response(
 				Status.OK,
 				new Headers()
-					.put(Headers.CONTENT_TYPE, "application/octet-stream")
-					.put(Headers.CONTENT_LENGTH, String.valueOf(bytes.length)),
+					.put(Headers.CONTENT_TYPE, "application/octet-stream"),
 				bytes
 			);
 		} catch (FileNotFoundException exception) {

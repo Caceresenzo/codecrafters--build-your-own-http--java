@@ -189,6 +189,10 @@ public class Client implements Runnable {
 
 		for (final var entry : response.headers().entrySet()) {
 			final var key = entry.getKey();
+			if (Headers.CONTENT_LENGTH.equalsIgnoreCase(key)) {
+				continue;
+			}
+
 			final var value = entry.getValue();
 
 			outputStream.write(key.getBytes());
@@ -197,9 +201,19 @@ public class Client implements Runnable {
 			outputStream.write(CRLF_BYTES);
 		}
 
+		final var body = response.body();
+		if (body != null) {
+			outputStream.write(Headers.CONTENT_LENGTH.getBytes());
+			outputStream.write(COLON_SPACE_BYTE);
+			outputStream.write(String.valueOf(body.length).getBytes());
+			outputStream.write(CRLF_BYTES);
+		}
+
 		outputStream.write(CRLF_BYTES);
 
-		outputStream.write(response.body());
+		if (body != null) {
+			outputStream.write(body);
+		}
 
 		outputStream.flush();
 	}
