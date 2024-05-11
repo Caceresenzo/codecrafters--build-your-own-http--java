@@ -27,8 +27,8 @@ public record Response(
 		return new Response(
 			Status.OK,
 			Map.of(
-				"Content-Type", "text/plain",
-				"Content-Length", String.valueOf(bytes.length)
+				Headers.CONTENT_TYPE, "text/plain",
+				Headers.CONTENT_LENGTH, String.valueOf(bytes.length)
 			),
 			bytes
 		);
@@ -37,12 +37,12 @@ public record Response(
 	public static Response file(File file) throws IOException {
 		try (final var inputStream = new FileInputStream(file)) {
 			final var bytes = inputStream.readAllBytes();
-			
+
 			return new Response(
 				Status.OK,
 				Map.of(
-					"Content-Type", "application/octet-stream",
-					"Content-Length", String.valueOf(bytes.length)
+					Headers.CONTENT_TYPE, "application/octet-stream",
+					Headers.CONTENT_LENGTH, String.valueOf(bytes.length)
 				),
 				bytes
 			);

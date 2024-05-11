@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,7 +50,9 @@ public class Client implements Runnable {
 			final var response = handle(request);
 			//			System.out.println(response);
 
-			send(response, outputStream);
+			final var modified = middleware(request, response);
+
+			send(request, modified, outputStream);
 		} catch (IOException exception) {
 			System.err.println("%d: returned an error: %s".formatted(id, exception.getMessage()));
 			exception.printStackTrace();
@@ -96,7 +99,8 @@ public class Client implements Runnable {
 		}
 
 		if (Method.POST.equals(method)) {
-			final var contentLength = Integer.parseInt(headers.get("Content-Length"));
+			final var rawContentLength = headers.get(Headers.CONTENT_LENGTH);
+			final var contentLength = rawContentLength != null ? Integer.parseInt(rawContentLength) : 0;
 			final var body = inputStream.readNBytes(contentLength);
 
 			return new Request(method, path, headers, body);
@@ -118,7 +122,7 @@ public class Client implements Runnable {
 		}
 
 		if (request.path().equals("/user-agent")) {
-			final var userAgent = request.headers().get("User-Agent");
+			final var userAgent = request.headers().get(Headers.USER_AGENT);
 			return Response.plainText(userAgent);
 		}
 
@@ -162,7 +166,24 @@ public class Client implements Runnable {
 		return Response.status(Status.NOT_FOUND);
 	}
 
-	public void send(Response response, OutputStream outputStream) throws IOException {
+	public Response middleware(Request request, Response response) throws IOException {
+		final var encodings = request.acceptEncoding();
+		if (!encodings.isEmpty()) {
+			final var encoding = encodings.getFirst();
+
+			final var encodedBody = encoding.encode(response.body());
+
+			final var headers = new HashMap<>(response.headers());
+			headers.put(Headers.CONTENT_ENCODING, encoding.name());
+			headers.put(Headers.CONTENT_LENGTH, String.valueOf(encodedBody.length));
+
+			response = new Response(response.status(), headers, encodedBody);
+		}
+
+		return response;
+	}
+
+	public void send(Request request, Response response, OutputStream outputStream) throws IOException {
 		outputStream.write(HTTP_1_1_BYTES);
 		outputStream.write(SPACE_BYTE);
 
