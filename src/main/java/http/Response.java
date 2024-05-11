@@ -4,19 +4,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
 
 public record Response(
 	Status status,
-	Map<String, String> headers,
+	Headers headers,
 	byte[] body
 ) {
 
 	public static Response status(Status status) {
 		return new Response(
 			status,
-			Collections.emptyMap(),
+			new Headers(),
 			new byte[0]
 		);
 	}
@@ -26,10 +24,9 @@ public record Response(
 
 		return new Response(
 			Status.OK,
-			Map.of(
-				Headers.CONTENT_TYPE, "text/plain",
-				Headers.CONTENT_LENGTH, String.valueOf(bytes.length)
-			),
+			new Headers()
+				.put(Headers.CONTENT_TYPE, "text/plain")
+				.put(Headers.CONTENT_LENGTH, String.valueOf(bytes.length)),
 			bytes
 		);
 	}
@@ -40,10 +37,9 @@ public record Response(
 
 			return new Response(
 				Status.OK,
-				Map.of(
-					Headers.CONTENT_TYPE, "application/octet-stream",
-					Headers.CONTENT_LENGTH, String.valueOf(bytes.length)
-				),
+				new Headers()
+					.put(Headers.CONTENT_TYPE, "application/octet-stream")
+					.put(Headers.CONTENT_LENGTH, String.valueOf(bytes.length)),
 				bytes
 			);
 		} catch (FileNotFoundException exception) {

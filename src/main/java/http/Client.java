@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Scanner;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
@@ -52,7 +50,7 @@ public class Client implements Runnable {
 
 			final var modified = middleware(request, response);
 
-			send(request, modified, outputStream);
+			send(modified, outputStream);
 		} catch (IOException exception) {
 			System.err.println("%d: returned an error: %s".formatted(id, exception.getMessage()));
 			exception.printStackTrace();
@@ -83,7 +81,7 @@ public class Client implements Runnable {
 			throw new IllegalStateException("content after version: " + scanner.next());
 		}
 
-		final var headers = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+		final var headers = new Headers();
 
 		while (!(line = nextLine(inputStream)).isEmpty()) {
 			final var parts = line.split(":", 2);
@@ -99,8 +97,7 @@ public class Client implements Runnable {
 		}
 
 		if (Method.POST.equals(method)) {
-			final var rawContentLength = headers.get(Headers.CONTENT_LENGTH);
-			final var contentLength = rawContentLength != null ? Integer.parseInt(rawContentLength) : 0;
+			final var contentLength = headers.contentLength();
 			final var body = inputStream.readNBytes(contentLength);
 
 			return new Request(method, path, headers, body);
@@ -122,7 +119,7 @@ public class Client implements Runnable {
 		}
 
 		if (request.path().equals("/user-agent")) {
-			final var userAgent = request.headers().get(Headers.USER_AGENT);
+			final var userAgent = request.headers().userAgent();
 			return Response.plainText(userAgent);
 		}
 
@@ -167,15 +164,15 @@ public class Client implements Runnable {
 	}
 
 	public Response middleware(Request request, Response response) throws IOException {
-		final var encodings = request.acceptEncoding();
+		final var encodings = request.headers().acceptEncoding();
 		if (!encodings.isEmpty()) {
 			final var encoding = encodings.getFirst();
 
 			final var encodedBody = encoding.encode(response.body());
 
-			final var headers = new HashMap<>(response.headers());
-			headers.put(Headers.CONTENT_ENCODING, encoding.name());
-			headers.put(Headers.CONTENT_LENGTH, String.valueOf(encodedBody.length));
+			final var headers = response.headers().clone()
+				.put(Headers.CONTENT_ENCODING, encoding.name())
+				.put(Headers.CONTENT_LENGTH, String.valueOf(encodedBody.length));
 
 			response = new Response(response.status(), headers, encodedBody);
 		}
@@ -183,7 +180,7 @@ public class Client implements Runnable {
 		return response;
 	}
 
-	public void send(Request request, Response response, OutputStream outputStream) throws IOException {
+	public void send(Response response, OutputStream outputStream) throws IOException {
 		outputStream.write(HTTP_1_1_BYTES);
 		outputStream.write(SPACE_BYTE);
 
