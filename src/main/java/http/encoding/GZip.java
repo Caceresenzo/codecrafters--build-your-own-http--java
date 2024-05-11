@@ -17,9 +17,10 @@ public class GZip implements Encoding {
 	public byte[] encode(byte[] input) throws IOException {
 		final var byteOutputStream = new ByteArrayOutputStream();
 
-		final var gzipOutputStream = new GZIPOutputStream(byteOutputStream);
-		gzipOutputStream.write(input);
-		gzipOutputStream.flush();
+		try (final var gzipOutputStream = new GZIPOutputStream(byteOutputStream)) {
+			gzipOutputStream.write(input);
+			gzipOutputStream.flush();
+		}
 
 		return byteOutputStream.toByteArray();
 	}
