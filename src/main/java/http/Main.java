@@ -24,6 +24,7 @@ public class Main {
 
 		try (final var serverSocket = new ServerSocket(PORT)) {
 			serverSocket.setReuseAddress(true);
+			System.out.println("listen: %d".formatted(PORT));
 
 			while (true) {
 				final var socket = serverSocket.accept();
