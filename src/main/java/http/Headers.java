@@ -19,9 +19,10 @@ public class Headers implements Cloneable {
 	public static final String CONTENT_LENGTH = "Content-Length";
 	public static final String CONTENT_TYPE = "Content-Type";
 	public static final String USER_AGENT = "User-Agent";
+	public static final String CONNECTION = "Connection";
 
 	public Headers() {
-		this.storage = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+		this.storage = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 	}
 
 	public Headers(Headers headers) {
@@ -49,6 +50,16 @@ public class Headers implements Cloneable {
 
 	public String userAgent() {
 		return storage.get(USER_AGENT);
+	}
+
+	public String connection() {
+		return storage.get(CONNECTION);
+	}
+
+	public boolean connectionKeepAlive() {
+		final var value = connection();
+
+		return value == null || value.equalsIgnoreCase("keep-alive");
 	}
 
 	public Headers put(String key, String value) {

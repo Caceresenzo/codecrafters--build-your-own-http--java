@@ -40,17 +40,26 @@ public class Client implements Runnable {
 		System.out.println("%d: connected".formatted(id));
 
 		try (socket) {
-			final var inputStream = new BufferedInputStream(socket.getInputStream());
-			final var outputStream = new BufferedOutputStream(socket.getOutputStream());
+			while (true) {
+				final var inputStream = new BufferedInputStream(socket.getInputStream());
+				final var outputStream = new BufferedOutputStream(socket.getOutputStream());
 
-			final var request = parse(inputStream);
-			//			System.out.println(request);
-			final var response = handle(request);
-			//			System.out.println(response);
+				final var request = parse(inputStream);
+				if (request == null) {
+					break;
+				}
 
-			final var modified = middleware(request, response);
+				final var response = handle(request);
+				final var modified = middleware(request, response);
 
-			send(modified, outputStream);
+				System.out.println("%d: %s %s -> %s".formatted(id, request.method(), request.path(), response.status()));
+
+				send(modified, outputStream);
+
+				if (!request.headers().connectionKeepAlive()) {
+					break;
+				}
+			}
 		} catch (IOException exception) {
 			System.err.println("%d: returned an error: %s".formatted(id, exception.getMessage()));
 			exception.printStackTrace();
@@ -61,6 +70,9 @@ public class Client implements Runnable {
 
 	public Request parse(InputStream inputStream) throws IOException {
 		var line = nextLine(inputStream);
+		if (line.isEmpty()) {
+			return null;
+		}
 
 		@SuppressWarnings("resource")
 		var scanner = new Scanner(line);
