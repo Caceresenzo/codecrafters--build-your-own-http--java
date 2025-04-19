@@ -50,13 +50,19 @@ public class Client implements Runnable {
 				}
 
 				final var response = handle(request);
+
+				final var shouldClose = shouldConnectionBeClosed(request);
+				if (shouldClose) {
+					response.headers().put(Headers.CONNECTION, "close");
+				}
+
 				final var modified = middleware(request, response);
 
 				System.out.println("%d: %s %s -> %s".formatted(id, request.method(), request.path(), response.status()));
 
 				send(modified, outputStream);
 
-				if (!request.headers().connectionKeepAlive()) {
+				if (shouldClose) {
 					break;
 				}
 			}
@@ -228,6 +234,12 @@ public class Client implements Runnable {
 		}
 
 		outputStream.flush();
+	}
+
+	public boolean shouldConnectionBeClosed(Request request) {
+		final var connection = request.headers().connection();
+
+		return connection != null && connection.equalsIgnoreCase("close");
 	}
 
 	private String nextLine(InputStream inputStream) throws IOException {

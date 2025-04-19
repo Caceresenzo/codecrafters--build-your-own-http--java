@@ -56,12 +56,6 @@ public class Headers implements Cloneable {
 		return storage.get(CONNECTION);
 	}
 
-	public boolean connectionKeepAlive() {
-		final var value = connection();
-
-		return value == null || value.equalsIgnoreCase("keep-alive");
-	}
-
 	public Headers put(String key, String value) {
 		storage.put(key, value);
 		return this;
